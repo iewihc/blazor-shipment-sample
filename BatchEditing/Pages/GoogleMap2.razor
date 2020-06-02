@@ -1,0 +1,106 @@
+﻿@page "/map2"
+@using System.Collections.ObjectModel
+@using RestSharp
+@using Syncfusion.EJ2.Blazor.Maps
+@using Newtonsoft.Json
+@using Syncfusion.EJ2.Blazor.Charts
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime;
+
+    <EjsMaps ModelType="@typeof(IDataTemplate)">
+        <MapsZoomSettings ZoomFactor="7"
+                          Enable="true"
+                          Toolbars='new string[]{"Zoom", "ZoomIn", "ZoomOut", "Pan", "Reset" }'>
+        </MapsZoomSettings>
+        
+        @* 台灣 *@
+        <MapsCenterPosition Latitude="24.653" Longitude="121.151"></MapsCenterPosition>
+        
+
+        <MapsLayers>
+            <MapsLayer  LayerType="@ShapeLayerType.OSM" UrlTemplate="http://mt1.google.com/vt/lyrs=m@129&hl=en&x=tileX&y=tileY&z=level">
+                <MapsMarkerSettings>
+                    <MapsMarker Visible="true" Shape="MarkerType.Circle" DataSource="MarkerTemperatureOne" AnimationDuration="0">
+                        <MapsMarkerTooltipSettings   Visible="true" ValuePath="name"  >
+                            <MarkerTooltipTemplate>
+                                @{
+                                    var data = context as IDataTemplate;
+                                    
+                                    <div>
+                                        <EjsChart Height="150px" Width="150px">
+                                            <ChartArea><ChartAreaBorder Width="0"></ChartAreaBorder></ChartArea>
+                                            <ChartPrimaryXAxis ValueType="Syncfusion.EJ2.Blazor.Charts.ValueType.Category" Interval="1">
+                                                <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                                            </ChartPrimaryXAxis>
+                                            <ChartPrimaryYAxis LabelFormat="{value}%">
+                                                <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+                                                <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                                            </ChartPrimaryYAxis>
+                                            <ChartSeriesCollection>
+                                                <ChartSeries DataSource="@SplineData" Name="Min Temp" XName="xValue" Width="2"
+                                                             Opacity="1" YName="yValue2" Type="ChartSeriesType.Spline">
+                                                    <ChartMarker Visible="true" Width="10" Height="10">
+                                                    </ChartMarker>
+                                                </ChartSeries>
+                                            </ChartSeriesCollection>
+                                        </EjsChart>
+                                    </div>
+                                }
+                            </MarkerTooltipTemplate>
+                        </MapsMarkerTooltipSettings>
+                    </MapsMarker>
+                </MapsMarkerSettings>
+            </MapsLayer>
+        </MapsLayers>
+    </EjsMaps>
+
+<style>
+    .markerTemplate {
+        height: 30px;
+        width: 30px;
+        display: block;
+        margin: auto;
+        font-size: 14px;
+    }
+</style>
+@code {
+
+    ElementReference Maps;
+    protected override async Task OnInitializedAsync()
+    {
+        //MarksSource = await  Http.GetJsonAsync<ObservableCollection<Temperatures>>($"{Common.baseURL}marklist");
+        //取API所有資料
+        
+    }
+
+
+    public List<SplineChartData> SplineData = new List<SplineChartData>
+    {
+        new SplineChartData { xValue = "Sun", yValue = 15, yValue1 = 10, yValue2 = 2 },
+        new SplineChartData { xValue = "Rain", yValue = 18, yValue1 = 20, yValue2 = 4 },
+    };
+    public List<Temperatures> MarkerTemperatureOne = new List<Temperatures>
+    {
+        new Temperatures { latitude=25.0796514, longitude=121.2320283, name="桃園機場", temperature= 28.5 },
+        new Temperatures { latitude=25.067566, longitude=121.5505103, name="松山機場", temperature= 26.5 },
+    };
+
+    private ObservableCollection<Temperatures> MarksSource { get; set; }
+    public class Temperatures
+    {
+        public double latitude;
+        public double longitude;
+        public string name;
+        public double temperature;
+    };
+    public class SplineChartData
+    {
+        public string xValue { get; set; }
+        public double yValue { get; set; }
+        public double yValue1 { get; set; }
+        public double yValue2 { get; set; }
+    }
+
+    
+
+} 

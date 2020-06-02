@@ -1,0 +1,268 @@
+﻿@page "/"
+@using System.Collections.ObjectModel
+@using Ekko.Library.Requestlmpl
+@using Ekko.Library.Responselmpl
+@using Microsoft.VisualStudio.Web.CodeGeneration.Contracts.Messaging
+@using Newtonsoft.Json
+@using Syncfusion.EJ2.Blazor.Grids
+@using Syncfusion.EJ2.Blazor.Buttons
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime;
+
+<style>
+    .e-save-icon::before {
+        content: '\e735';
+    }
+
+    .e-cancel-icon::before {
+        content: '\e7a7';
+    }
+
+    .e-next-icon::before {
+        content: '\e859';
+    }
+
+    .e-prev-icon::before {
+        content: '\e854';
+    }
+
+    .e-first-icon::before {
+        content: '\e896';
+    }
+
+    .e-last-icon::before {
+        content: '\e897';
+    }
+
+    .e-add-icon::before {
+        content: '\e7f9';
+    }
+
+    .jwbtnVisible {
+        display: block;
+    }
+
+    .jwbtnHidden {
+        display: none;
+    }
+</style>
+
+
+
+
+
+@if (Header == null)
+{
+    <p><em>Loading</em></p>
+}
+else
+{
+    <div>
+        <h1 id="myId">qs</h1>
+    </div>
+    <div>
+        @* 一、 增加Class="@myButtonClass" *@
+        <EjsButton CssClass="e-flat" IsPrimary="true" Content="首筆" IconCss="e-icons e-first-icon" @onclick="FirstAction"></EjsButton>
+        <EjsButton CssClass="e-flat" IsPrimary="true" Content="上筆" IconCss="e-icons e-prev-icon" @onclick="PrevAction"></EjsButton>
+        <EjsButton CssClass="e-flat" IsPrimary="true" Content="下筆" IconCss="e-icons e-next-icon" @onclick="NextAction"></EjsButton>
+        <EjsButton CssClass="e-flat" IsPrimary="true" Content="末筆" IconCss="e-icons e-last-icon" @onclick="LastAction"></EjsButton>
+        <EjsButton CssClass="e-flat" IsPrimary="true" Content="新增" IconCss="e-icons e-add-icon" @onclick="InsertAction"></EjsButton>
+        <EjsButton CssClass="e-flat" IsToggle="true" IsPrimary="true" Content="存檔" IconCss="e-icons e-save-icon" @onclick="Submit"></EjsButton>
+        @* <EjsButton CssClass="e-flat" IsToggle="true" IsPrimary="true" Content="取消" IconCss="e-icons e-cancel-icon" @onclick="Cancel"></EjsButton> *@
+
+
+
+
+        @*<RadzenButton ButtonType="ButtonType.Submit" Icon="save" Text="Save" />
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="cancel" style="display: inline-block; margin-left: 10px;" Text="Cancel" Click="@Cancel" />*@
+
+
+    </div>
+
+    <RadzenTemplateForm Data="@Header">
+        <RadzenFieldset Text="Shipment Info">
+            <div class="row">
+                <div class="align-items-center d-flex col-md-2">
+                    <RadzenLabel Text="出貨單號" />
+                </div>
+                <div class="col-md-2">
+                    <RadzenTextBox style="width: 100%;" Name="nbr" @bind-Value="Header.nbr" />
+                </div>
+                <div class="align-items-center d-flex col-md-2">
+                    <RadzenLabel Text="日期" />
+                </div>
+                <div class="col-md-2">
+                    <RadzenDatePicker style="width: 100%;" Name="nbrdate" DateFormat="yyyy-MM-dd" @bind-Value="Header.nbrdate" />
+                </div>
+                <div class="align-items-center d-flex col-md-2">
+                    <RadzenLabel Text="倉庫號碼" />
+                </div>
+                <div class="col-md-2">
+                    <RadzenTextBox style=" width: 100%;" Name="ware_nbr" @bind-Value="Header.ware_nbr" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="align-items-center d-flex col-md-2">
+                    <RadzenLabel Text="未稅總額" />
+                </div>
+                <div class="col-md-2">
+                    <RadzenNumeric style="width: 100%;" Name="ctot_amt" @bind-Value="Header.ctot_amt" />
+                </div>
+                <div class="align-items-center d-flex col-md-2">
+                    <RadzenLabel Text="出貨總額" />
+                </div>
+                <div class="col-md-2">
+                    <RadzenNumeric style="width: 100%;" Name="tot_amt" Placeholder="0" @bind-Value="Header.ctot_amt" />
+                </div>
+            </div>
+        </RadzenFieldset>
+
+    </RadzenTemplateForm>
+
+    <div>
+
+        <EjsGrid  @ref="Grid" DataSource="@Details" AllowSorting="true" AllowFiltering="true"
+                 Toolbar="@(new List<string>() { "Add", "Delete" })" Height="315" AllowRowDragAndDrop="true" AllowPaging="true" >
+            <GridEvents  OnCellEdit="CellEditHandler" RowDataBound="RowBound" TValue="Shp_bat_mvDto"></GridEvents>
+            <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Batch"></GridEditSettings>
+            <GridColumns>
+                <GridColumn Field=@nameof(Shp_bat_mvDto.nbr) DefaultValue="2123123123" HeaderText="訂單編號" ValidationRules="@(new { required = true })" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(Shp_bat_mvDto.seq)  HeaderText="S/N" IsPrimaryKey="true" Width="120"></GridColumn>
+
+                <GridColumn Field=@nameof(Shp_bat_mvDto.item_nbr) HeaderText="產品編號" ValidationRules="@(new { required = true })" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(Shp_bat_mvDto.item_name) HeaderText="產品名稱" Width="130"></GridColumn>
+                <GridColumn Field=@nameof(Shp_bat_mvDto.unit) HeaderText="單位" Format="C2" EditType="EditType.NumericEdit" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(Shp_bat_mvDto.qty) Context="" HeaderText="數量" Format="C2" EditType="EditType.NumericEdit" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(Shp_bat_mvDto.c_price) HeaderText="單價" Format="C2" EditType="EditType.NumericEdit" Width="120"></GridColumn>
+                <GridColumn Field=@nameof(Shp_bat_mvDto.c_amt) HeaderText="總價" Format="C2" EditType="EditType.NumericEdit" Width="120">
+                    <Template>
+                        @{
+                            var value = (context as Shp_bat_mvDto);
+                            var finalAmount = value.qty * value.c_price;
+                            <p>$@finalAmount</p>
+                        }
+                    </Template>
+                </GridColumn>
+
+            </GridColumns>
+
+        </EjsGrid>
+    </div>
+}
+
+
+@functions{
+    // 二、給定變數(CSS)
+    public string jwCSSBtnBase { get; set; }
+
+
+    public void RowBound(RowDataBoundEventArgs<Shp_bat_mvDto> args)
+    {
+        var Data = JsonConvert.DeserializeObject<Shp_bat_mvDto>(JsonConvert.SerializeObject(args.Data));
+        Data.nbr = "21312";
+        Grid.SetRowData(0, Data);
+        this.StateHasChanged();
+    }
+
+
+}
+@code{
+
+    private ObservableCollection<Shp_bat_mvDto> Details { get; set; }
+    private Shp_bah_mvDto Header { get; set; } = new Shp_bah_mvDto();
+    EjsGrid<Shp_bat_mvDto> Grid;
+    public string IconCss = "e-btn-sb-icons e-play-icon";
+
+    protected override async Task OnInitializedAsync()
+
+    {
+        Header = await Http.GetJsonAsync<Shp_bah_mvDto>($"{Common.baseURL}shipment/first");
+        Details = await Http.GetJsonAsync<ObservableCollection<Shp_bat_mvDto>>($"{Common.baseURL}shipment/Details/{Header.nbr}");
+        // 三、給定初始(CSS)
+
+        jwCSSBtnBase = "jwbtnVisible";
+    }
+
+    public async void Submit()
+    {
+        //prepare data and package
+        var header = Header;
+        var changed = await Grid.GetBatchChanges();
+        var DetailsChangedRecord = JsonConvert.DeserializeObject<Dictionary<string, List<Shp_bat_mvDto>>>(JsonConvert.SerializeObject(changed));
+        var toBeUpdate = DetailsChangedRecord["changedRecords"]; // get the details of edited records
+        var toBeDelete = DetailsChangedRecord["deletedRecords"];
+        var toBeInsert = DetailsChangedRecord["addedRecords"];
+
+        var map44_pagckage = new Map44Uow();
+        map44_pagckage.InjectFrom(header);
+        map44_pagckage.toBeInsert.InjectFrom(toBeInsert);
+        map44_pagckage.toBeUpdate.InjectFrom(toBeUpdate);
+        map44_pagckage.toBeDelete.InjectFrom(toBeDelete);
+
+        //send to server
+        await Http.PostJsonAsync($"{Common.baseURL}+shipment/edit/blazor", map44_pagckage);
+
+    }
+
+
+    private async Task InsertAction()
+    {
+
+        await JsRuntime.InvokeVoidAsync("alertMessage", "顯示訊息!!!!");
+        //jwCSSBtnBase="jwbtnHidden";
+        //Details.Clear();
+
+
+    }
+
+
+    public async Task CellEditHandler(CellEditArgs<Shp_bat_mvDto> args)
+    {
+        var rows = args.RowData;
+        var currentCell = args.Value;
+        // if type (rows.id) lostfocus... ex:GOOG
+        // NewSource = Try to get api value (&?name=GOOG)... return value current price.
+        //      if NewSource not null (let args.rowdata.qty = NewSource.qty ....  )
+        args.RowData.qty = 999999M;
+        var temp = args.RowData.ioseq;
+        var tmp2= await Grid.GetSelectedRowCellIndexes();
+        var temp2 = await Grid.GetColumns();
+
+        Grid.SetCellValue(1, args.RowData.nbr, "123");
+
+    }
+
+    private async Task Change()
+    {
+        var temp2 = await Grid.GetColumns();
+    }
+
+
+    public async void FirstAction()
+    {
+        Header = await Http.GetJsonAsync<Shp_bah_mvDto>($"{Common.baseURL}shipment/first");
+        Details = await Http.GetJsonAsync<ObservableCollection<Shp_bat_mvDto>>($"{Common.baseURL}shipment/Details/{Header.nbr}");
+    }
+    public async void NextAction()
+    {
+        Header = await Http.GetJsonAsync<Shp_bah_mvDto>($"{Common.baseURL}shipment/next/{Header.nbr}");
+        Details = await Http.GetJsonAsync<ObservableCollection<Shp_bat_mvDto>>($"{Common.baseURL}shipment/Details/{Header.nbr}");
+
+    }
+    public async void PrevAction()
+    {
+        Header = await Http.GetJsonAsync<Shp_bah_mvDto>($"{Common.baseURL}shipment/prev/{Header.nbr}");
+        Details = await Http.GetJsonAsync<ObservableCollection<Shp_bat_mvDto>>($"{Common.baseURL}shipment/Details/{Header.nbr}");
+    }
+    public async void LastAction()
+    {
+        Header = await Http.GetJsonAsync<Shp_bah_mvDto>($"{Common.baseURL}shipment/last/{Header.nbr}");
+        Details = await Http.GetJsonAsync<ObservableCollection<Shp_bat_mvDto>>($"{Common.baseURL}shipment/Details/{Header.nbr}");
+    }
+
+
+
+
+
+
+}
